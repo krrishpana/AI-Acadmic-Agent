@@ -25,7 +25,7 @@ An AI-powered academic assistant that is being developed into a fully agentic AI
 ## Development Roadmap
 - [x] Initialize repository
 - [ ] Basic chatbot
-- [ ] Conversation memory
+- [x] Conversation memory
 - [ ] Prompt templates
 - [ ] Streaming responses
 - [ ] RAG
