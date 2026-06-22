@@ -8,14 +8,47 @@ load_dotenv()
 
 HISTORY_FILE = "chat_history.json"
 
+PERSONAS = {
+    "1": "You are a university professor who explains things with academic rigor. Always provide detailed explanations and cite sources when possible.",
+    "2": "You are a strict technical interviewer who evaluates code efficiency and correctness. Always ask follow-up questions to probe deeper into the candidate's understanding.",
+    "3": "You are a Socratic AI mentor who never gives direct answers but asks guiding questions to help the user arrive at their own conclusions. Always encourage critical thinking and exploration."
+}
+
+def get_valid_input(prompt):
+    while True:
+        user_input = input(prompt)
+        if user_input.strip() != "":
+            return user_input
+        print("Input cannot be empty. Please try again.")
+
 def main():
     api_from_env = os.getenv("GEMINI_API_KEY")
-    client = genai.Client(api_key=api_from_env)
 
-    print("Chat starts here... type 'end' to end the conversation.")
+    try:
+        client = genai.Client(api_key=api_from_env)
 
-    
-    userinput = input("User: ")
+        #testing the client initialization by making a simple call to the model
+        client.models.generate_content(
+            model="gemini-2.5-flash", 
+            contents="Ping"
+        )                       
+
+    except Exception as e:
+        print("Error initializing the Gemini client. Please check your API key and environment variables.")
+        print(f"Exception details: {e}")
+        return
+
+    print("Select a persona for the chatbot:")
+    for key, description in PERSONAS.items():
+        print(f"{key}: {description}")
+
+    choice = input("Enter the number corresponding to your choice: ")
+    selected_system_instruction = PERSONAS.get(choice, PERSONAS["1"])  # Default to persona 1 if invalid choice
+
+    config= types.GenerateContentConfig(
+                system_instruction=selected_system_instruction,
+                temperature=0.7,
+            )
 
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, 'r') as f:
@@ -25,19 +58,24 @@ def main():
     else:
         history = []
 
+    userinput = get_valid_input("User: ")
+
     while userinput.lower() != 'end':
         history.append(types.Content(
             role= "user",
             parts= [types.Part.from_text(text = userinput)]
         ))
-        systemoutput = client.models.generate_content(
-            contents= history,
-            model = "gemini-2.5-flash-lite",
-            config= types.GenerateContentConfig(
-                system_instruction="Answer in 1 line , within 50 characters.",
-                temperature=0.5,
+
+        try:
+            systemoutput = client.models.generate_content(
+                contents= history,
+                model = "gemini-2.5-flash-lite",
+                config= config
             )
-        )
+        except Exception as e:
+            print("Error generating content from the Gemini model. Please check your network connection and model availability.")
+            print(f"Exception details: {e}")
+            break
 
         history.append(types.Content(
             role= "model",
@@ -45,7 +83,7 @@ def main():
         ))
 
         print("Statbot : ", systemoutput.text)
-        userinput = input("User: ")
+        userinput = get_valid_input("User: ")
 
     with open(HISTORY_FILE, 'w') as f:
         json_ready_history = [message.model_dump() for message in history]
