@@ -43,7 +43,7 @@ def main():
         print(f"{key}: {description}")
 
     choice = input("Enter the number corresponding to your choice: ")
-    selected_system_instruction = PERSONAS.get(choice, PERSONAS["1"])  # Default to persona 1 if invalid choice
+    selected_system_instruction = PERSONAS.get(choice, PERSONAS["1"])  
 
     config= types.GenerateContentConfig(
                 system_instruction=selected_system_instruction,
@@ -67,23 +67,40 @@ def main():
         ))
 
         try:
-            systemoutput = client.models.generate_content(
+            print("Statbot: Thinking...", end="", flush=True)
+            systemoutput = client.models.generate_content_stream(
                 contents= history,
                 model = "gemini-2.5-flash-lite",
                 config= config
             )
         except Exception as e:
             print("Error generating content from the Gemini model. Please check your network connection and model availability.")
-            print(f"Exception details: {e}")
             break
 
-        history.append(types.Content(
-            role= "model",
-            parts =[types.Part.from_text(text = systemoutput.text)]
-        ))
+        full_response = ""
 
-        print("Statbot : ", systemoutput.text)
+        first_chunk = True
+
+        try:
+            for chunk in systemoutput:
+                if first_chunk:
+                    print("\rStatbot: ", end="", flush=True)
+                    first_chunk = False
+                print(chunk.text, end="", flush=True)
+                full_response += chunk.text
+        except Exception as e:
+            print("\nError while streaming the response. Please try again.")
+            print(f"Exception details: {e}")
+
+            print()
+
+        history.append(types.Content(
+                role= "model",
+                parts= [types.Part.from_text(text = full_response)]
+            ))
+
         userinput = get_valid_input("User: ")
+        
 
     with open(HISTORY_FILE, 'w') as f:
         json_ready_history = [message.model_dump() for message in history]
