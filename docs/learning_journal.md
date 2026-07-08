@@ -47,3 +47,14 @@ Implement real-time response streaming and low-level terminal animations to dras
 - Learned to manipulate the `\r` (Carriage Return) control character to seamlessly reset the terminal's typewriter cursor back to index 0 of the active line without triggering a new line feed.
 - Implemented string accumulator patterns to stitch disparate chunk fragments back into a contiguous string array, ensuring structured chat payload contexts remain valid for historical appending.
 - Engineered a sequential Boolean state switch (`first_chunk = True`) to keep a clean "Thinking..." text module visible right up until the exact moment data packets arrive, wiping the temporary visual queue via white-out space strings before text printing begins.
+
+## Day 5
+
+### Goal
+Integrate a local vector database and implement Retrieval-Augmented Generation (RAG) to ground chatbot responses in custom document data.
+
+### Learned
+- Modified the stateful chat loop to intercept user queries and convert them into vectors using `client.models.embed_content()` with the `text-embedding-004` model.
+- Connected a local disk-persistent vector store using `chromadb.PersistentClient()` to handle text fragment indexing and mathematical similarity searches.
+- Engineered a synchronized loop parsing pipeline that matches text chunks, unique ID tags, and float arrays into parallel lists to satisfy ChromaDB storage schemas.
+- Developed an `augmented_prompt` layout wrapper to merge retrieved document text with user queries, ensuring proper data context injection before streaming to the model.
