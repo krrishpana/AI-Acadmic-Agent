@@ -3,6 +3,8 @@ import config
 import prompts
 import utils
 import chatbot
+import glob
+import os
 
 import document_loader
 import text_splitter
@@ -21,30 +23,46 @@ def run_rag_pipeline():
 
     collection = vector_store.get_vector_collection()
 
-    pdf_path = "/Users/krrishpanakarmacharya/Desktop/Projects/data/ai_notes.pdf" 
-    print(f"\n Scanning for knowledge source: '{pdf_path}'...")
+    data_directory = "/Users/krrishpanakarmacharya/Desktop/Projects/data"
+    pdf_files = glob.glob(os.path.join(data_directory, "*.pdf"))
 
-    try:
-        raw_text = document_loader.load_pdf(pdf_path)
+    if not pdf_files:
+        print(f"No PDF files found in '{data_directory}'. Please check your path.")
+        sys.exit(1)
 
-        if raw_text:
-            chunks = text_splitter.split_text(raw_text, chunk_size=500, chunk_overlap=50)
-            print(f"Fragmented document into {len(chunks)} individual semantic blocks.")
+    print(f"\n Scanning directory... Found {len(pdf_files)} knowledge source(s).")
 
-        embeddings=[]
-        ids =[]
+    global_chunk_count = 0
 
-        for i, chunk in enumerate(chunks):
-            vector = embedding_engine.get_embedding(client, chunk)
-            if vector:
-                embeddings.append(vector)
-                ids.append(f"doc_chunk_{i}")
+    for pdf_path in pdf_files:
+        filename = os.path.basename(pdf_path)
+        print(f"\n Processing knowledge source: '{filename}'...")
 
-        if embeddings:
-                vector_store.add_to_vector_store(collection, ids, chunks, embeddings)
-                
-    except Exception as e:
-        print(f" Ingestion skipped or failed: {e}. Attempting to use existing database cache.")
+        try:
+            raw_text = document_loader.load_pdf(pdf_path)
+
+            if raw_text:
+                chunks = text_splitter.split_text(raw_text)
+                print(f"Fragmented {filename} into {len(chunks)} individual semantic blocks.")
+
+            embeddings=[]
+            ids =[]
+
+            for i, chunk in enumerate(chunks):
+                vector = embedding_engine.get_embedding(client, chunk)
+                if vector:
+                    embeddings.append(vector)
+                    ids.append(f"{filename}_chunk_{global_chunk_count}")
+                    global_chunk_count += 1
+
+            if embeddings:
+                    vector_store.add_to_vector_store(collection, ids, chunks, embeddings)
+                    
+        except Exception as e:
+            print(f"  Failed to process '{filename}': {e}")
+
+    print(f"\n Ingestion complete! Total items stacked in database: {global_chunk_count}")
+    print("-------------------------------------------------------------------\n")
 
     utils.display_personas(prompts.PERSONAS)
     choice = utils.get_valid_input("Enter the number corresponding to your choice of persona: ")

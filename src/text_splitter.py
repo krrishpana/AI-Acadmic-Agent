@@ -1,20 +1,30 @@
-def split_text(text: str, chunk_size: int = 500, chunk_overlap: int =50)-> list:
+def split_text(docs_with_metadata: list[dict], chunk_size: int = 500, chunk_overlap: int =50)-> list:
 
-    if not text.strip():
-        return []
+    chunked_records = []
     
-    words = text.split()
-    chunks = []
+    for docs in docs_with_metadata:
+        text = docs["text"]
+        meta = docs["metadata"]
 
-    step = chunk_size - chunk_overlap
+        start = 0
+        text_length = len(text)
+        chunk_idx = 0
 
-    if step <= 0:
-        print("Warning: chunk_overlap must be smaller than chunk_size. Resetting overlap to 0.")
-        step = chunk_size
-        chunk_overlap = 0
+        while start < text_length:
+            end = start + chunk_size
+            chunk_text = text[start:end]
+            
+            # Create a unique copy of the metadata dictionary for this specific slice
+            chunk_meta = meta.copy()
+            chunk_meta["chunk_id"] = chunk_idx
+            
+            chunked_records.append({
+                "text": chunk_text,
+                "metadata": chunk_meta
+            })
+            
+            start += (chunk_size - chunk_overlap)
+            chunk_idx += 1
 
-    for i in range(0, len(words), step):
-        chunk = " ".join(words[i:i + chunk_size])
-        chunks.append(chunk)
+    return chunked_records
 
-    return chunks

@@ -76,7 +76,7 @@ Answer the user question using the context data provided above. If the context d
                 parts= [types.Part.from_text(text = full_response)]
             ))
 
-        userinput = get_valid_input("User: ")
+        userinput = get_valid_input("\nUser: ")
 
     save_history(history)
 
