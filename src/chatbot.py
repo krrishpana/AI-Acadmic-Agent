@@ -13,16 +13,29 @@ def start_chat_session(client, system_instruction: str, collection):
 
     userinput = get_valid_input("User: ")
 
-    while userinput.lower() != 'end':
+    while userinput.lower() != 'end': 
+
+        active_prompt = userinput
 
         try:
             print("\n Searching local PDF database for answers...")
             
             query_vector = embedding_engine.get_embedding(client, userinput)
         
-            retrieved_chunks = query_engine.search_database(collection, query_vector, top_k=3)
-            
-            context_block = "\n---\n".join(retrieved_chunks)
+            retrieved_records = query_engine.search_database(collection, query_vector, top_k=3)
+                        
+            context_chunks = []
+            sources_used = set() 
+            for record in retrieved_records:
+                context_chunks.append(record["text"])
+                
+                meta = record["metadata"]
+                if meta:
+                    source_file = meta.get("source", "Unknown Document")
+                    page_num = meta.get("page", "?")
+                    sources_used.add(f"✓ {source_file} (Page {page_num})")
+
+            context_block = "\n---\n".join(context_chunks)
 
             augmented_prompt = f"""[CONTEXT FROM LOCAL NOTES]:
 {context_block}
@@ -33,7 +46,7 @@ def start_chat_session(client, system_instruction: str, collection):
 [INSTRUCTION]:
 Answer the user question using the context data provided above. If the context does not fully cover the answer, use your general knowledge to fill in the gaps, but prioritize and ground your explanation in any relevant terms mentioned in the context snippets."""
 
-            userinput = augmented_prompt
+            active_prompt = augmented_prompt
 
         except Exception as e:
             print(f"RAG Retrieval failed ({e}). Proceeding with standard fallback memory...")
@@ -65,6 +78,13 @@ Answer the user question using the context data provided above. If the context d
                         first_chunk = False
                     print(chunk.text, end="", flush=True)
                     full_response += chunk.text
+
+            if sources_used:
+                print("\n\n Sources:")
+                for source in sorted(sources_used):
+                    print(source)
+                print()
+
         except Exception as e:
             print("\nError while streaming the response. Please try again.")
             print(f"Exception details: {e}")
@@ -73,7 +93,7 @@ Answer the user question using the context data provided above. If the context d
 
         history.append(types.Content(
                 role= "model",
-                parts= [types.Part.from_text(text = full_response)]
+                parts= [types.Part.from_text(text = active_prompt)]
             ))
 
         userinput = get_valid_input("\nUser: ")

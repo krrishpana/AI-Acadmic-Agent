@@ -7,13 +7,14 @@ def get_vector_collection(db_path: str = "./chroma_db", collection: str = "ai_no
 
     return collection
 
-def add_to_vector_store(collection, ids: list[str], documents: list[str], embeddings: list[list[float]]) -> None:
+def add_to_vector_store(collection, ids: list[str], documents: list[str], embeddings: list[list[float]], metadata: list[dict]) -> None:
 
     try:
         collection.add(
         documents= documents,
         embeddings= embeddings,
-        ids= ids)
+        ids= ids,
+        metadatas= metadata)
         print(f"Successfully indexed {len(documents)} chunks into the vector store.")
 
     except Exception as e:

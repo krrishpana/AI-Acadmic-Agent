@@ -23,8 +23,10 @@ def run_rag_pipeline():
 
     collection = vector_store.get_vector_collection()
 
+
     data_directory = "/Users/krrishpanakarmacharya/Desktop/Projects/data"
     pdf_files = glob.glob(os.path.join(data_directory, "*.pdf"))
+
 
     if not pdf_files:
         print(f"No PDF files found in '{data_directory}'. Please check your path.")
@@ -39,25 +41,36 @@ def run_rag_pipeline():
         print(f"\n Processing knowledge source: '{filename}'...")
 
         try:
-            raw_text = document_loader.load_pdf(pdf_path)
+            docs_with_metadata = document_loader.load_pdf(pdf_path)
 
-            if raw_text:
-                chunks = text_splitter.split_text(raw_text)
-                print(f"Fragmented {filename} into {len(chunks)} individual semantic blocks.")
+            if docs_with_metadata:
+                chunk_records = text_splitter.split_text(docs_with_metadata)
+                print(f"Fragmented {filename} into {len(chunk_records)} individual semantic blocks.")
 
             embeddings=[]
             ids =[]
+            documents = []
+            metadatas = []
 
-            for i, chunk in enumerate(chunks):
-                vector = embedding_engine.get_embedding(client, chunk)
-                if vector:
-                    embeddings.append(vector)
-                    ids.append(f"{filename}_chunk_{global_chunk_count}")
-                    global_chunk_count += 1
+            for record in chunk_records:
+                    chunk_text = record["text"]
+                    chunk_meta = record["metadata"]
+
+                    vector = embedding_engine.get_embedding(client, chunk_text)
+                    if vector:
+                        embeddings.append(vector)
+                        documents.append(chunk_text)
+                        metadatas.append(chunk_meta)
+                        
+                        # Combines filename and global count for an elite, non-colliding ID string
+                        ids.append(f"{filename}_chunk_{global_chunk_count}")
+                        global_chunk_count += 1
 
             if embeddings:
-                    vector_store.add_to_vector_store(collection, ids, chunks, embeddings)
-                    
+                # Pass the metadata list straight to your updated vector store function!
+                vector_store.add_to_vector_store(collection, ids, documents, embeddings, metadatas)
+                print(f" Successfully indexed '{filename}' with metadata into vector database.")
+                
         except Exception as e:
             print(f"  Failed to process '{filename}': {e}")
 
