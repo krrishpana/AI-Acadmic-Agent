@@ -38,6 +38,11 @@ def run_rag_pipeline():
 
     for pdf_path in pdf_files:
         filename = os.path.basename(pdf_path)
+
+        if vector_store.file_exists_in_store(collection, filename):
+            print(f" '{filename}' is already indexed in the vector store. Skipping ingestion.")
+            continue
+
         print(f"\n Processing knowledge source: '{filename}'...")
 
         try:
