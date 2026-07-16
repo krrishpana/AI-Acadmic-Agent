@@ -58,3 +58,16 @@ Integrate a local vector database and implement Retrieval-Augmented Generation (
 - Connected a local disk-persistent vector store using `chromadb.PersistentClient()` to handle text fragment indexing and mathematical similarity searches.
 - Engineered a synchronized loop parsing pipeline that matches text chunks, unique ID tags, and float arrays into parallel lists to satisfy ChromaDB storage schemas.
 - Developed an `augmented_prompt` layout wrapper to merge retrieved document text with user queries, ensuring proper data context injection before streaming to the model.
+
+
+## Day 6
+
+### Goal
+Implement advanced source tracking, safe payload routing, and a high-performance incremental ingestion system to scale the RAG pipeline.
+
+### Learned
+- Built a robust multi-file tracking loop that iterates over a localized repository directory, automatically indexing multiple knowledge sources simultaneously.
+- Upgraded the data loader and text-splitter to attach persistent metadata payloads (`'source'` file and `'page'` numbers) to every text block, allowing the chatbot to display exact verified sources at the end of each response.
+- Implemented an independent `active_prompt` runtime state variable inside the chat engine to route data-heavy context blocks securely to Gemini without polluting the clean user conversation history.
+- Utilized Python `set` collection properties during the retrieval phase to filter out redundant citations automatically, rendering clean and non-repeating source lists to the user interface.
+- Engineered a persistent database check using ChromaDB metadata lookups (`collection.get(where=...)`) to verify previously indexed assets, skipping identical files instantly on startup and dropping initialization latency to milliseconds.
