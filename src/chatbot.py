@@ -5,99 +5,55 @@ from prompts import PERSONAS
 from utils import get_valid_input
 import embedding_engine
 import query_engine
+import tools
 
 def start_chat_session(client, system_instruction: str, collection):
     history = load_history()
 
-    model_config = config.get_model_config(system_instruction)
+    agent_instruction = f"""
+    {system_instruction}
 
+    You are an AI Academic Agent. You have access to specialized tools:
+    - search_notes: Searches the student's vector store notes for specific information.
+    - summarize_notes: Summarizes relevant context blocks from the vector database.
+    - create_quiz: Generates conceptual quizzes on topics.
+    - create_flashcards: Generates active recall flashcards.
+    - study_plan: Creates structured study schedules.
+
+    Use your tools whenever appropriate to fulfill the user's intent.
+    """
+
+    agent_config = types.GenerateContentConfig(
+        system_instruction=agent_instruction,
+        tools=[tools.search_notes, tools.summarize_notes ,tools.create_quiz, tools.generate_flashcards, tools.study_plan],
+        temperature=0.2
+    )
+
+    chat = client.chats.create(
+        model=config.MODEL,
+        config=agent_config,
+        history=history
+    )
+
+    print("\n Statbot is ready! (Type 'end' to save and exit)\n")
     userinput = get_valid_input("User: ")
 
     while userinput.lower() != 'end': 
 
-        active_prompt = userinput
-
-        try:
-            print("\n Searching local PDF database for answers...")
-            
-            query_vector = embedding_engine.get_embedding(client, userinput)
-        
-            retrieved_records = query_engine.search_database(collection, query_vector, top_k=3)
-                        
-            context_chunks = []
-            sources_used = set() 
-            for record in retrieved_records:
-                context_chunks.append(record["text"])
-                
-                meta = record["metadata"]
-                if meta:
-                    source_file = meta.get("source", "Unknown Document")
-                    page_num = meta.get("page", "?")
-                    sources_used.add(f"✓ {source_file} (Page {page_num})")
-
-            context_block = "\n---\n".join(context_chunks)
-
-            augmented_prompt = f"""[CONTEXT FROM LOCAL NOTES]:
-{context_block}
-
-[USER QUESTION]:
-{userinput}
-
-[INSTRUCTION]:
-Answer the user question using the context data provided above. If the context does not fully cover the answer, use your general knowledge to fill in the gaps, but prioritize and ground your explanation in any relevant terms mentioned in the context snippets."""
-
-            active_prompt = augmented_prompt
-
-        except Exception as e:
-            print(f"RAG Retrieval failed ({e}). Proceeding with standard fallback memory...")
-        history.append(types.Content(
-            role= "user",
-            parts= [types.Part.from_text(text = userinput)]
-                ))
-
         try:
             print("Statbot: Thinking...", end="", flush=True)
-            systemoutput = client.models.generate_content_stream(
-                contents= history,
-                model = "gemini-2.5-flash",
-                config= model_config
-            )
-        except Exception as e:
-            print("Error generating content from the Gemini model. Please check your network connection and model availability.")
-            break
+            response = chat.send_message(userinput)
 
-        full_response = ""
-
-        first_chunk = True
-
-        try:
-            for chunk in systemoutput:
-                if chunk and chunk.text:
-                    if first_chunk:
-                        print("\rStatbot: ", end="", flush=True)
-                        first_chunk = False
-                    print(chunk.text, end="", flush=True)
-                    full_response += chunk.text
-
-            if sources_used:
-                print("\n\n Sources:")
-                for source in sorted(sources_used):
-                    print(source)
-                print()
-
-        except Exception as e:
-            print("\nError while streaming the response. Please try again.")
-            print(f"Exception details: {e}")
-
+            print("\r\033[KStatbot: ", end="", flush=True)
+            print(response.text)
             print()
 
-        history.append(types.Content(
-                role= "model",
-                parts= [types.Part.from_text(text = active_prompt)]
-            ))
+        except Exception as e:
+            print(f"\n\r\033[K[Error during conversation]: {e}\n")
+            break
 
         userinput = get_valid_input("\nUser: ")
 
-    save_history(history)
+    save_history(chat.get_history())
 
 

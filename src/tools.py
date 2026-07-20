@@ -3,7 +3,7 @@ import os
 import config
 import vector_store
 
-collection = vector_store.get_vectore_collection()
+collection = vector_store.get_vector_collection()
 
 def search_notes(query: str) -> str:
     """
@@ -17,7 +17,7 @@ def search_notes(query: str) -> str:
     
     try:
     
-        response = client.model.embed_content(
+        response = client.models.embed_content(
             model=config.EMBED_MODEL,
             contents=query
         )
@@ -34,7 +34,26 @@ def search_notes(query: str) -> str:
         if not documents:
             return "No relevant context found for the given query."
         
-        return "\n---\n".join(documents)
+        context_chunks = []
+        sources_used = set()
+
+        #Extract text and metadata sources
+        for record in documents:
+            context_chunks.append(record["text"])
+            meta = record.get("metadata", {}) if isinstance(record, dict) else {}
+            if meta:
+                source_file = meta.get("source", "Unknown") if isinstance(meta, dict) else "Unknown"
+                page_num = meta.get("page", "?")
+                sources_used.add(f"{source_file} (Page {page_num})")
+
+        context_text = "\n---\n".join(context_chunks)
+        sources_text = "\n".join([f"- {s}" for s in sorted(sources_used)])
+            
+        return f"""Retrieved Notes:
+        {context_text}
+
+        Sources Used:
+        {sources_text}"""
 
     except Exception as e:
         print(f"Error during search: {e}")

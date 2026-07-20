@@ -61,6 +61,8 @@ def run_rag_pipeline():
                     chunk_text = record["text"]
                     chunk_meta = record["metadata"]
 
+                    chunk_meta["source"] = filename
+
                     vector = embedding_engine.get_embedding(client, chunk_text)
                     if vector:
                         embeddings.append(vector)
