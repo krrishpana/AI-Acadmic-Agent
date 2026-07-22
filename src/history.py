@@ -1,44 +1,52 @@
+# history.py
 import os
 import json
-from google.genai import types
 import base64
+from google.genai import types
 
 HISTORY_FILE = "chat_history.json"
 
-def clean_bytes(obj):
-    """Recursively converts bytes objects to Base64 strings for JSON serialization."""
+def sanitize_for_json(obj):
+    """
+    Recursively converts any bytes/binary payloads (like thought_signatures 
+    or internal tool tokens) into plain text Base64 strings.
+    """
     if isinstance(obj, bytes):
         return base64.b64encode(obj).decode('utf-8')
     elif isinstance(obj, dict):
-        return {k: clean_bytes(v) for k, v in obj.items()}
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
     elif isinstance(obj, list):
-        return [clean_bytes(item) for item in obj]
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return [sanitize_for_json(item) for item in obj]
     return obj
 
 def load_history():
-    if os.path.exists(HISTORY_FILE):
-        try:
-            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                save_dicts= json.load(f)
-                return [types.Content.model_validate(item) for item in save_dicts]
-        except(json.JSONDecodeError, TypeError) as e:
-            print(f"Error loading history: {e}. Starting with an empty history.")
-            return []
-    else:
-        history = []
+    """Loads saved JSON history back into SDK Content objects."""
+    if not os.path.exists(HISTORY_FILE):
+        return []
 
-    return history
+    try:
+        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+            saved_dicts = json.load(f)
+            return [types.Content.model_validate(item) for item in saved_dicts]
+    except Exception as e:
+        print(f"Notice: Couldn't parse existing chat history ({e}). Starting fresh.")
+        return []
 
 def save_history(history):
+    """Sanitizes binary data and persists chat history to disk."""
     try:
         json_ready_history = []
         for message in history:
-            message_dict = message.model_dump()
-            cleaned_message = clean_bytes(message_dict)
-            json_ready_history.append(cleaned_message)
+            raw_dict = message.model_dump()
+            clean_dict = sanitize_for_json(raw_dict)
+            json_ready_history.append(clean_dict)
 
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-            json_ready_history = [message.model_dump() for message in history]
             json.dump(json_ready_history, f, indent=4)
+            
+        print("\nChat history saved successfully!")
+
     except Exception as e:
-        print(f"Error saving history: {e}.")
+        print(f"\nError saving history: {e}")
