@@ -21,6 +21,9 @@ def start_chat_session(client, system_instruction: str, collection):
     - study_plan: Creates structured study schedules.
 
     Use your tools whenever appropriate to fulfill the user's intent.
+
+    CRITICAL CITATION RULE:
+    Whenever you use the 'search_notes' tool to answer a question, you MUST include a "Sources:" section at the very end of your response, listing the exact PDF filenames and page numbers provided in the tool output.
     """
 
     agent_config = types.GenerateContentConfig(

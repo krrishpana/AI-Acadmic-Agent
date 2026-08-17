@@ -26,10 +26,11 @@ def search_notes(query: str) -> str:
 
         results = collection.query(
             query_embeddings=[query_vector],
-            n_results=3,
+            n_results=4,
         )
 
         documents = results.get('documents', [[]])[0]
+        metadatas = results.get('metadatas', [[]])[0]
 
         if not documents:
             return "No relevant context found for the given query."
@@ -38,16 +39,20 @@ def search_notes(query: str) -> str:
         sources_used = set()
 
         #Extract text and metadata sources
-        for record in documents:
-            context_chunks.append(record["text"])
-            meta = record.get("metadata", {}) if isinstance(record, dict) else {}
-            if meta:
-                source_file = meta.get("source", "Unknown") if isinstance(meta, dict) else "Unknown"
+        for doc_text, meta in zip(documents, metadatas):
+            context_chunks.append(doc_text)
+
+            if isinstance(meta, dict):
+                source_file = meta.get("source", "Unknown PDF")
                 page_num = meta.get("page", "?")
                 sources_used.add(f"{source_file} (Page {page_num})")
 
         context_text = "\n---\n".join(context_chunks)
-        sources_text = "\n".join([f"- {s}" for s in sorted(sources_used)])
+        
+        if sources_used:
+            sources_text = "\n".join([f"- {s}" for s in sorted(sources_used)])
+        else:
+            sources_text = "- No specific source metadata available"
             
         return f"""Retrieved Notes:
         {context_text}
