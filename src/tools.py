@@ -3,8 +3,11 @@ import os
 import config
 import vector_store
 
+from langchain_core.tools import tool
+
 collection = vector_store.get_vector_collection()
 
+@tool
 def search_notes(query: str) -> str:
     """
     Searches the persistent vector database for specific concepts, facts, or context 
@@ -62,15 +65,17 @@ def search_notes(query: str) -> str:
 
     except Exception as e:
         print(f"Error during search: {e}")
+        return f"Error executing search: {e}"
 
 
+@tool
 def summarize_notes(filename: str) -> str:
     """
     summarizes the relevant context blocks retrieved from the vector database based on the user's query.
     """
     client = config.configuration()
 
-    if not config:
+    if not client:
         return "Error: Gemini client is not initialized."
     
     try:
@@ -91,7 +96,10 @@ def summarize_notes(filename: str) -> str:
         return response.text
     except Exception as e:
         print(f"An error occurred while summarizing the notes.: {e}")
-    
+        return f"Error summarizing notes: {e}"
+
+
+@tool   
 def create_quiz(topic: str)-> str:
     """
     Generates a 3-question conceptual quiz (with multiple choice or short answers) based 
@@ -103,7 +111,7 @@ def create_quiz(topic: str)-> str:
     if not client:
         return "Error: Gemini client is not initialized."
     
-    context = search_notes(topic)
+    context = search_notes.func(topic)
 
     prompt = f"""
     Based on the following academic reference material:
@@ -122,7 +130,10 @@ def create_quiz(topic: str)-> str:
         return response.text
     except Exception as e:
         print(f"An error occurred while generating the quiz: {e}")
+        return f"Error generating quiz: {e}"
 
+
+@tool
 def generate_flashcards(topic: str) -> str:
     """
     Generates a set of high-impact Front/Back flashcards for active recall study sessions.
@@ -133,7 +144,7 @@ def generate_flashcards(topic: str) -> str:
     if not client:
         return "Error: Gemini client is not initialized."
     
-    context = search_notes(topic)
+    context = search_notes.func(topic)
 
     prompt = f"""
     Based on the following academic reference material:
@@ -152,8 +163,10 @@ def generate_flashcards(topic: str) -> str:
         return response.text
     except Exception as e:
         print(f"An error occurred while generating flashcards: {e}")
+        return f"Error generating flashcards {e}"
 
 
+@tool
 def study_plan(objective: str) -> str:
     """
     Generates a structured, chronological daily study roadmap based on a target academic deadline 
@@ -181,3 +194,12 @@ def study_plan(objective: str) -> str:
         return response.text
     except Exception as e:
         print(f"An error occurred while generating the study plan: {e}")
+        return f"Error making study plan {e}"
+
+all_tools = [
+    search_notes,
+    summarize_notes,
+    create_quiz,
+    generate_flashcards,
+    study_plan
+]
