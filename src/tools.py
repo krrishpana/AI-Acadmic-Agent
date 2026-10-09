@@ -2,6 +2,7 @@ from google import genai
 import os
 import config
 import vector_store
+import embedding_engine
 
 from langchain_core.tools import tool
 
@@ -25,7 +26,9 @@ def search_notes(query: str) -> str:
             contents=query
         )
 
-        query_vector = response.embeddings[0].values
+        query_vector = embedding_engine.get_embedding(client, query)
+        if not query_vector:
+            return "Error: could not create an embedding for the query."
 
         results = collection.query(
             query_embeddings=[query_vector],

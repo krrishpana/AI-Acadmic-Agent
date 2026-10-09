@@ -1,10 +1,7 @@
 from google.genai import types
 import config
 from history import load_history, save_history
-from prompts import PERSONAS
 from utils import get_valid_input
-import embedding_engine
-import query_engine
 import tools
 
 def start_chat_session(client, system_instruction: str, collection):
@@ -17,7 +14,7 @@ def start_chat_session(client, system_instruction: str, collection):
     - search_notes: Searches the student's vector store notes for specific information.
     - summarize_notes: Summarizes relevant context blocks from the vector database.
     - create_quiz: Generates conceptual quizzes on topics.
-    - create_flashcards: Generates active recall flashcards.
+    - generate_flashcards: Generates active recall flashcards.
     - study_plan: Creates structured study schedules.
 
     Use your tools whenever appropriate to fulfill the user's intent.
@@ -28,7 +25,7 @@ def start_chat_session(client, system_instruction: str, collection):
 
     agent_config = types.GenerateContentConfig(
         system_instruction=agent_instruction,
-        tools=[tools.search_notes, tools.summarize_notes ,tools.create_quiz, tools.generate_flashcards, tools.study_plan],
+        tools=[tools.search_notes, tools.summarize_notes, tools.create_quiz, tools.generate_flashcards, tools.study_plan],
         temperature=0.2
     )
 
@@ -42,7 +39,6 @@ def start_chat_session(client, system_instruction: str, collection):
     userinput = get_valid_input("User: ")
 
     while userinput.lower() != 'end': 
-
         try:
             print("Statbot: Thinking...", end="", flush=True)
             response = chat.send_message(userinput)
@@ -58,5 +54,3 @@ def start_chat_session(client, system_instruction: str, collection):
         userinput = get_valid_input("\nUser: ")
 
     save_history(chat.get_history())
-
-

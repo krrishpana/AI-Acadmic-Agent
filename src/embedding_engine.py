@@ -1,16 +1,15 @@
 from google.genai import types
+import config
 
 def get_embedding(client, text_to_embed: str) -> list[float]:
 
     if not text_to_embed.strip():
         print("Warning: The input text is empty or whitespace. Returning an empty embedding.")
         return []
-    
-    EMBED_MODEL = "gemini-embedding-2"
 
     try:
         response = client.models.embed_content(
-            model=EMBED_MODEL,
+            model=config.EMBED_MODEL,
             contents= text_to_embed
         )
 

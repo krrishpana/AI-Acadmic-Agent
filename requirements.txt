@@ -1,3 +1,7 @@
 google-genai
 python-dotenv
 pypdf
+chromadb
+langgraph
+langchain-core
+langchain-google-genai

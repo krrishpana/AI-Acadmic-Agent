@@ -7,7 +7,7 @@ load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL = "gemini-2.5-flash"
-EMBED_MODEL = "gemini-embedding-001"
+EMBED_MODEL = "gemini-embedding-2"
 
 def configuration():
     try:
