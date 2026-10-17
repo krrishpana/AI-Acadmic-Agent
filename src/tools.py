@@ -74,19 +74,45 @@ def search_notes(query: str) -> str:
 @tool
 def summarize_notes(filename: str) -> str:
     """
-    summarizes the relevant context blocks retrieved from the vector database based on the user's query.
+    Summarizes ONE whole document from the student's notes.
+    'filename' must be the document's file name, e.g. 'ai_notes.pdf'.
+    If you are not sure of the exact name, call list_documents first.
     """
+    # CHANGED: the docstring above (see change 1)
+
     client = config.configuration()
 
     if not client:
         return "Error: Gemini client is not initialized."
     
     try:
-        records = collection.get(where={"source": filename})
+        # NEW: find the real file name, ignoring upper/lower case
+        sources = vector_store.get_all_sources(collection)
+
+        wanted = filename.strip().lower()
+        if not wanted.endswith(".pdf"):
+            wanted += ".pdf"
+
+        match = None
+        for source in sources:
+            if source.lower() == wanted:
+                match = source
+                break
+
+        # NEW: if nothing matches, tell the LLM the real names
+        if match is None:
+            return (
+                f"No document named '{filename}'. "
+                f"Available documents: {', '.join(sources)}. "
+                f"Call summarize_notes again with one of these exact names."
+            )
+
+        # CHANGED: search with `match` (the real name), not `filename`
+        records = collection.get(where={"source": match})
         document = records.get('documents', [])
 
         if not document:
-            return f"No documents found for the file: {filename}"
+            return f"No documents found for the file: {match}"
         
         full_text = " ".join(document)[:8000]
 
@@ -198,11 +224,24 @@ def study_plan(objective: str) -> str:
     except Exception as e:
         print(f"An error occurred while generating the study plan: {e}")
         return f"Error making study plan {e}"
+    
+@tool
+def list_documents() -> str:
+    """
+    Lists the file names of all documents in the student's notes database.
+    Use this when the user asks what notes are available, or before
+    summarize_notes if you are unsure of the exact file name.
+    """
+    sources = vector_store.get_all_sources(collection)
+    if not sources:
+        return "No documents have been indexed yet."
+    return "Available documents:\n" + "\n".join(f"- {s}" for s in sources)
 
 all_tools = [
     search_notes,
     summarize_notes,
     create_quiz,
     generate_flashcards,
-    study_plan
+    study_plan,
+    list_documents
 ]

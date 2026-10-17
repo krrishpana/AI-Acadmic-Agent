@@ -1,11 +1,10 @@
 import chromadb 
 import document_loader
+import config
 
-def get_vector_collection(db_path: str = "./chroma_db", collection: str = "ai_notes"):
-    chroma_client = chromadb.PersistentClient(path="/Users/krrishpanakarmacharya/Desktop/Projects/chroma_db")
-    collection = chroma_client.get_or_create_collection(name="my_collection")
-
-    return collection
+def get_vector_collection(collection_name: str = "my_collection"):
+    chroma_client = chromadb.PersistentClient(path=str(config.CHROMA_DIR))
+    return chroma_client.get_or_create_collection(name=collection_name)
 
 def add_to_vector_store(collection, ids: list[str], documents: list[str], embeddings: list[list[float]], metadata: list[dict]) -> None:
 
@@ -31,3 +30,11 @@ def file_exists_in_store(collection, file_name: str) -> bool:
     except Exception as e:
         print(f"Error checking file existence in vector store: {e}")
         return False
+    
+def get_all_sources(collection) -> list[str]:
+    result = collection.get(include=["metadatas"])
+    return sorted({
+        metadata["source"]
+        for metadata in result["metadatas"]
+        if metadata and metadata.get("source")
+    })
