@@ -3,6 +3,7 @@ import os
 import config
 import vector_store
 import embedding_engine
+import query_engine
 
 from langchain_core.tools import tool
 
@@ -14,57 +15,31 @@ def search_notes(query: str) -> str:
     Searches the persistent vector database for specific concepts, facts, or context 
     matching the user's academic query. Returns the top 3 relevant context blocks.
     """
-    client = config.configuration()
+    # client = config.configuration()
 
-    if not client:
-        return "Error: Gemini client is not initialized."
+    # if not client:
+    #     return "Error: Gemini client is not initialized."
     
     try:
-    
-        response = client.models.embed_content(
-            model=config.EMBED_MODEL,
-            contents=query
-        )
+        results = query_engine.retrieve(query, top_k=4)
 
-        query_vector = embedding_engine.get_embedding(client, query)
-        if not query_vector:
-            return "Error: could not create an embedding for the query."
-
-        results = collection.query(
-            query_embeddings=[query_vector],
-            n_results=4,
-        )
-
-        documents = results.get('documents', [[]])[0]
-        metadatas = results.get('metadatas', [[]])[0]
-
-        if not documents:
+        if not results:
             return "No relevant context found for the given query."
-        
+
         context_chunks = []
         sources_used = set()
 
-        #Extract text and metadata sources
-        for doc_text, meta in zip(documents, metadatas):
-            context_chunks.append(doc_text)
-
-            if isinstance(meta, dict):
-                source_file = meta.get("source", "Unknown PDF")
-                page_num = meta.get("page", "?")
-                sources_used.add(f"{source_file} (Page {page_num})")
+        for item in results:
+            context_chunks.append(item["text"])
+            meta = item["metadata"]
+            source_file = meta.get("source", "Unknown PDF")
+            page_num = meta.get("page", "?")
+            sources_used.add(f"{source_file} (Page {page_num})")
 
         context_text = "\n---\n".join(context_chunks)
-        
-        if sources_used:
-            sources_text = "\n".join([f"- {s}" for s in sorted(sources_used)])
-        else:
-            sources_text = "- No specific source metadata available"
-            
-        return f"""Retrieved Notes:
-        {context_text}
+        sources_text = "\n".join(f"- {s}" for s in sorted(sources_used))
 
-        Sources Used:
-        {sources_text}"""
+        return f"Retrieved Notes:\n{context_text}\n\nSources Used:\n{sources_text}"
 
     except Exception as e:
         print(f"Error during search: {e}")

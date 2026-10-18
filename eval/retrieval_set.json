@@ -1,0 +1,54 @@
+[
+    {
+      "question": "What do RLHF and DPO do?",
+      "source": "ai_notes.pdf",
+      "pages": [3]
+    },
+    {
+      "question": "What are the layers of IoT architecture?",
+      "source": "Smart Greenhouse.pdf",
+      "pages": [2]
+    },
+    {
+        "question": "What are the main stages involved in a Retrieval-Augmented Generation (RAG) pipeline, from processing source documents to retrieving relevant information for a query?",
+        "source": "ai_notes.pdf",
+        "pages": [4]
+    },
+    {
+        "question": "How does RAG address the limitations of a standalone large language model, particularly when answering questions that require external or updated knowledge?",
+        "source": "ai_notes.pdf",
+        "pages": [1, 3, 4]
+    },
+    {
+        "question": "How does the MLOps pipeline validate incoming bike-sharing data, transform it into a star schema, and load it into the database?",
+        "source": "MLOps Main Report.pdf",
+        "pages": [6, 14, 15, 16]
+    },
+    {
+        "question": "Which evaluation metrics are used to assess the bike-sharing demand prediction model, and what does each metric measure?",
+        "source": "MLOps Main Report.pdf",
+        "pages": [24]
+    },
+    {
+        "question": "How does the deployed prediction API receive input data and obtain a bike-sharing demand prediction from the trained model?",
+        "source": "MLOps Main Report.pdf",
+        "pages": [25, 26, 27]
+    },
+    {
+        "question": "What are the five layers of the IoT architecture described in the smart greenhouse report, and what role does each layer play?",
+        "source": "Smart Greenhouse.pdf",
+        "pages": [2]
+    },
+    {
+        "question": "How does the greenhouse simulation respond when soil moisture is insufficient, and which components or indicators demonstrate the response?",
+        "source": "Smart Greenhouse.pdf",
+        "pages": [8, 15]
+    },
+    {
+        "question": "What future improvement does the smart greenhouse report recommend to make the system more sustainable, and how would it help?",
+        "source": "Smart Greenhouse.pdf",
+        "pages": [16, 17]
+    }
+      
+    
+  ]

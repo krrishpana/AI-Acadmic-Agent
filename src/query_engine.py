@@ -1,10 +1,14 @@
+import config
+import embedding_engine
+import vector_store
+
 def search_database(collection, query_vector: list[float], top_k: int = 3) -> list[str]:
 
     if not query_vector:
         return []
     try:
         results = collection.query(
-            query_embeddings=query_vector,
+            query_embeddings=[query_vector],
             n_results=top_k
         )
 
@@ -34,3 +38,12 @@ def search_database(collection, query_vector: list[float], top_k: int = 3) -> li
         print(f"Error querying the vector store: {e}")
         return []
 
+def retrieve(query: str, top_k: int = 4) -> list[dict]:
+    """Returns the top_k chunks for a query as [{"text": ..., "metadata": {...}}, ...]"""
+    client = config.configuration()
+    if client is None:
+        return []
+
+    query_vector = embedding_engine.get_embedding(client, query)
+    collection = vector_store.get_vector_collection()
+    return search_database(collection, query_vector, top_k)
